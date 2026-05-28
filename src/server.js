@@ -8,11 +8,17 @@ const { calculateTrustScore, getTrustLabel, isReadyForDemographic } = require('.
 const PERSONAS = require('../config/personas');
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3005;
 const TOKEN = process.env.PANEL_PASSWORD || 'changeme123';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Login route must be before auth middleware
+app.post('/api/auth/login', (req, res) => {
+  if (req.body.password === TOKEN) res.json({ success: true, token: TOKEN });
+  else res.status(401).json({ error: 'Wrong password' });
+});
 
 app.use('/api', (req, res, next) => {
   const t = req.headers['x-auth-token'] || req.query.token;
@@ -129,11 +135,6 @@ app.get('/api/personas', (req, res) => {
     key, name: p.name, gender: p.gender,
     age_range: p.age_range, interests: p.interests,
   })));
-});
-
-app.post('/api/auth/login', (req, res) => {
-  if (req.body.password === TOKEN) res.json({ success: true, token: TOKEN });
-  else res.status(401).json({ error: 'Wrong password' });
 });
 
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
