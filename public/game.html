@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moon Slayer Chronicles</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030712;--surface:#0f172a;--surface2:#1e293b;
+  --border:rgba(148,163,184,0.12);
+  --blue:#3b82f6;--blue-glow:rgba(59,130,246,0.4);
+  --purple:#7c3aed;--gold:#f59e0b;--silver:#94a3b8;
+  --text:#f1f5f9;--muted:#64748b;--red:#ef4444;--green:#22c55e;
+}
+body{background:var(--bg);color:var(--text);font-family:'Crimson Text',Georgia,serif;min-height:100vh;overflow-x:hidden;position:relative}
+#stars-canvas{position:fixed;inset:0;z-index:0}
+.moon{position:fixed;top:50px;right:70px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e2e8f0,#94a3b8);box-shadow:0 0 30px rgba(226,232,240,0.35),0 0 80px rgba(148,163,184,0.15);z-index:1;animation:moonPulse 4s ease-in-out infinite}
+@keyframes moonPulse{0%,100%{box-shadow:0 0 30px rgba(226,232,240,0.35),0 0 80px rgba(148,163,184,0.15)}50%{box-shadow:0 0 45px rgba(226,232,240,0.55),0 0 100px rgba(148,163,184,0.25)}}
+.fog{position:fixed;bottom:0;left:0;right:0;height:120px;background:linear-gradient(transparent,rgba(3,7,18,0.85));z-index:1;pointer-events:none}
+#game{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.screen{display:none;width:100%;max-width:740px}
+.screen.active{display:block;animation:fadeIn 0.35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* TITLE */
+.title-screen{text-align:center;padding:2.5rem 1.5rem}
+.title-logo{font-family:'Cinzel',serif;font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#e2e8f0,#3b82f6,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:0.25rem}
+.title-sub{font-family:'Cinzel',serif;font-size:0.85rem;color:var(--silver);letter-spacing:0.35em;text-transform:uppercase;margin-bottom:2.5rem}
+.knight-art{font-size:5rem;margin-bottom:1.75rem;display:inline-block;filter:drop-shadow(0 0 20px rgba(59,130,246,0.6));animation:floatKnight 3s ease-in-out infinite}
+@keyframes floatKnight{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+.title-desc{font-size:1.05rem;color:var(--silver);font-style:italic;line-height:1.8;max-width:480px;margin:0 auto 2.5rem}
+
+/* BUTTONS */
+.btn-game{display:inline-block;padding:0.9rem 2.2rem;font-family:'Cinzel',serif;font-weight:700;font-size:0.9rem;letter-spacing:0.1em;border:2px solid var(--blue);border-radius:8px;background:rgba(59,130,246,0.1);color:var(--text);cursor:pointer;transition:all 0.2s;text-transform:uppercase}
+.btn-game:hover{background:rgba(59,130,246,0.25);box-shadow:0 0 24px var(--blue-glow);transform:translateY(-2px)}
+.btn-game:active{transform:translateY(0)}
+.btn-game.gold{border-color:var(--gold);background:rgba(245,158,11,0.1)}
+.btn-game.gold:hover{background:rgba(245,158,11,0.2);box-shadow:0 0 24px rgba(245,158,11,0.4)}
+.btn-game.danger{border-color:var(--red);background:rgba(239,68,68,0.1)}
+.btn-game.danger:hover{background:rgba(239,68,68,0.2);box-shadow:0 0 24px rgba(239,68,68,0.4)}
+
+/* QUEST */
+.quest-screen{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;text-align:center}
+.level-badge{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem}
+.quest-title{font-family:'Cinzel',serif;font-size:1.9rem;font-weight:900;color:var(--text);margin-bottom:1.25rem}
+.quest-divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent);margin:0 auto 1.25rem}
+.quest-story{font-size:1rem;color:var(--silver);font-style:italic;line-height:1.8;margin-bottom:1.25rem}
+.quest-objective{background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:0.9rem 1.25rem;margin-bottom:1.75rem;text-align:left}
+.quest-objective-label{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--blue);margin-bottom:0.4rem}
+.quest-objective-text{color:var(--text);font-size:0.98rem;display:flex;align-items:center;gap:0.5rem}
+
+/* BATTLE */
+.battle-screen{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.battle-header{background:rgba(3,7,18,0.7);border-bottom:1px solid var(--border);padding:0.65rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+.battle-level-label{font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold);letter-spacing:0.15em}
+.battle-turn-label{font-family:'Cinzel',serif;font-size:0.75rem;color:var(--silver)}
+.battle-arena{display:grid;grid-template-columns:1fr auto 1fr;gap:0.5rem;padding:1.25rem;min-height:260px;align-items:center}
+.fighter{display:flex;flex-direction:column;align-items:center;gap:0.6rem;position:relative}
+.fighter-sprite{font-size:3.8rem;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.6));transition:transform 0.1s;line-height:1}
+.fighter-sprite.hit{animation:hitAnim 0.35s ease}
+.fighter-sprite.attack{animation:attackAnim 0.4s ease}
+@keyframes hitAnim{0%,100%{transform:translateX(0);filter:drop-shadow(0 4px 10px rgba(0,0,0,0.6))}30%{transform:translateX(-12px);filter:drop-shadow(0 0 12px rgba(239,68,68,0.9)) brightness(1.6)}70%{transform:translateX(10px);filter:drop-shadow(0 0 12px rgba(239,68,68,0.9)) brightness(1.6)}}
+@keyframes attackAnim{0%{transform:translateX(0) scale(1)}40%{transform:translateX(20px) scale(1.15)}100%{transform:translateX(0) scale(1)}}
+.fighter-name{font-family:'Cinzel',serif;font-weight:700;font-size:0.82rem;color:var(--text);text-align:center}
+.fighter-bars{width:100%;min-width:130px}
+.bar-row{margin-bottom:0.35rem}
+.bar-label{display:flex;justify-content:space-between;font-size:0.68rem;color:var(--muted);margin-bottom:0.18rem;font-family:'Cinzel',serif}
+.bar-track{height:7px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 0.5s ease}
+.hp-fill{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.hp-fill.low{background:linear-gradient(90deg,#dc2626,#ef4444);animation:hpLow 1s ease infinite}
+@keyframes hpLow{0%,100%{opacity:1}50%{opacity:0.65}}
+.mp-fill{background:linear-gradient(90deg,#1d4ed8,#3b82f6)}
+.status-row{display:flex;gap:0.25rem;flex-wrap:wrap;justify-content:center;min-height:20px}
+.status-tag{font-size:0.6rem;padding:0.12rem 0.4rem;border-radius:4px;font-family:'Cinzel',serif}
+.tag-defend{background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.35);color:#93c5fd}
+.vs{font-family:'Cinzel',serif;font-size:1.3rem;font-weight:900;color:rgba(148,163,184,0.25);align-self:center}
+
+/* LOG */
+.combat-log{background:rgba(3,7,18,0.55);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0.65rem 1.1rem;min-height:90px;max-height:110px;overflow-y:auto}
+.log-entry{font-size:0.85rem;color:var(--silver);line-height:1.55;padding:0.1rem 0}
+.log-p{color:#93c5fd}
+.log-e{color:#fca5a5}
+.log-sys{color:var(--gold);font-style:italic}
+.log-crit{color:#fbbf24;font-weight:600}
+
+/* ACTIONS */
+.action-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;padding:1rem 1.1rem}
+.action-grid.has-moon{grid-template-columns:repeat(5,1fr)}
+.action-btn{padding:0.65rem 0.4rem;font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;letter-spacing:0.02em;border-radius:8px;cursor:pointer;border:1px solid;text-align:center;transition:all 0.15s;line-height:1.3}
+.action-btn small{display:block;font-size:0.58rem;font-weight:400;opacity:0.65;margin-top:0.15rem}
+.action-btn:disabled{opacity:0.35;cursor:not-allowed}
+.a-atk{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#fca5a5}
+.a-atk:hover:not(:disabled){background:rgba(239,68,68,0.2);box-shadow:0 0 14px rgba(239,68,68,0.3)}
+.a-pow{background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:#fcd34d}
+.a-pow:hover:not(:disabled){background:rgba(245,158,11,0.2);box-shadow:0 0 14px rgba(245,158,11,0.3)}
+.a-moon{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#93c5fd}
+.a-moon:hover:not(:disabled){background:rgba(59,130,246,0.2);box-shadow:0 0 14px rgba(59,130,246,0.3)}
+.a-def{background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.3);color:#c4b5fd}
+.a-def:hover:not(:disabled){background:rgba(124,58,237,0.2);box-shadow:0 0 14px rgba(124,58,237,0.3)}
+.a-heal{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);color:#86efac}
+.a-heal:hover:not(:disabled){background:rgba(34,197,94,0.2);box-shadow:0 0 14px rgba(34,197,94,0.3)}
+
+/* DAMAGE POPUP */
+.dmg-popup{position:absolute;font-family:'Cinzel',serif;font-weight:900;font-size:1.6rem;pointer-events:none;animation:dmgFloat 1s ease forwards;z-index:50;text-shadow:0 0 8px currentColor;top:10%;left:30%}
+@keyframes dmgFloat{0%{opacity:1;transform:translateY(0) scale(0.8)}20%{transform:translateY(-8px) scale(1.2)}100%{opacity:0;transform:translateY(-50px) scale(1)}}
+
+/* VICTORY */
+.victory-screen,.gameover-screen{background:var(--surface);border-radius:16px;padding:2.25rem;text-align:center}
+.victory-screen{border:1px solid rgba(34,197,94,0.2)}
+.gameover-screen{border:1px solid rgba(239,68,68,0.2)}
+.victory-title{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--green);margin-bottom:0.4rem;animation:victoryPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275)}
+@keyframes victoryPop{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
+.gameover-title{font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--red);margin-bottom:0.4rem;animation:shake 0.5s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.reward-box{background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.15);border-radius:10px;padding:0.85rem 1.25rem;margin:1.25rem 0;text-align:left}
+.reward-item{display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0;font-size:0.92rem;color:var(--text)}
+
+/* FINAL VICTORY */
+.final-screen{background:var(--surface);border:1px solid rgba(59,130,246,0.25);border-radius:16px;padding:2.5rem;text-align:center;position:relative;overflow:hidden}
+.final-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(59,130,246,0.07) 0%,transparent 65%);pointer-events:none}
+.final-title{font-family:'Cinzel',serif;font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,#bfdbfe,#3b82f6,#1d4ed8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:titleShine 3s ease-in-out infinite}
+@keyframes titleShine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+.sword-wrap{position:relative;display:inline-block;margin:1.5rem 0}
+.sword-emoji{font-size:7rem;display:inline-block;animation:swordReveal 1.2s cubic-bezier(0.175,0.885,0.32,1.275) 0.5s both;filter:drop-shadow(0 0 25px rgba(59,130,246,0.9))}
+@keyframes swordReveal{0%{transform:translateY(-80px) rotate(-25deg) scale(0);opacity:0}60%{transform:translateY(8px) rotate(5deg) scale(1.1);opacity:1}100%{transform:translateY(0) rotate(0) scale(1);opacity:1}}
+.sword-glow{position:absolute;inset:-25px;background:radial-gradient(ellipse,rgba(59,130,246,0.35) 0%,transparent 65%);animation:glowPulse 2s ease-in-out infinite;pointer-events:none;border-radius:50%}
+@keyframes glowPulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
+
+/* Lightning bolts */
+.bolt{position:absolute;width:3px;border-radius:2px;box-shadow:0 0 8px var(--blue),0 0 16px var(--blue);background:var(--blue);animation:boltFlash 1.8s ease-in-out infinite}
+.bolt-1{height:55px;top:-10px;left:calc(50% + 30px);transform:rotate(25deg);animation-delay:0s}
+.bolt-2{height:40px;top:5px;right:calc(50% + 30px);transform:rotate(-20deg);animation-delay:0.5s}
+.bolt-3{height:65px;top:-20px;left:calc(50% - 10px);transform:rotate(-10deg);animation-delay:1s}
+.bolt-4{height:35px;top:15px;right:calc(50% - 20px);transform:rotate(35deg);animation-delay:1.3s}
+@keyframes boltFlash{0%,100%{opacity:0}8%,12%{opacity:1}18%{opacity:0}35%,40%{opacity:0.7}45%{opacity:0}}
+
+.sword-name{font-family:'Cinzel',serif;font-size:1.3rem;color:#93c5fd;letter-spacing:0.2em;margin-bottom:0.85rem;text-shadow:0 0 20px rgba(59,130,246,0.5);animation:fadeIn 1s 1.5s both}
+.sword-desc{font-size:0.98rem;color:var(--silver);font-style:italic;line-height:1.85;max-width:480px;margin:0 auto 1.5rem;animation:fadeIn 1s 1.7s both}
+.sword-stats{display:inline-grid;grid-template-columns:1fr 1fr;gap:0.4rem 1.5rem;background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.18);border-radius:12px;padding:0.9rem 1.5rem;margin-bottom:1.75rem;text-align:left;animation:fadeIn 1s 1.9s both}
+.sword-stat{font-size:0.88rem;color:var(--text)}
+.sword-stat strong{color:#93c5fd}
+.final-quote{font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);font-style:italic;margin-bottom:2rem;animation:fadeIn 1s 2.1s both}
+
+/* FLASH */
+.attack-flash{position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0}
+.flash-p{background:rgba(59,130,246,0.12);animation:flashAnim 0.3s ease}
+.flash-e{background:rgba(239,68,68,0.12);animation:flashAnim 0.3s ease}
+@keyframes flashAnim{0%{opacity:0}35%{opacity:1}100%{opacity:0}}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+@media(max-width:520px){
+  .title-logo{font-size:2rem}
+  .battle-arena{padding:0.75rem;gap:0.25rem}
+  .fighter-sprite{font-size:2.8rem}
+  .fighter-bars{min-width:100px}
+  .action-grid{grid-template-columns:repeat(2,1fr)}
+  .action-grid.has-moon{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<canvas id="stars-canvas"></canvas>
+<div class="moon"></div>
+<div class="fog"></div>
+<div id="game">
+
+<!-- TITLE -->
+<div class="screen active" id="screen-title">
+  <div class="title-screen">
+    <div style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.45em;color:var(--silver);text-transform:uppercase;margin-bottom:0.75rem">Sebuah Kisah Epik</div>
+    <div class="title-logo">Moon Slayer<br>Chronicles</div>
+    <div class="title-sub">Kronik Penghancur Bulan</div>
+    <div class="knight-art">🌙⚔️</div>
+    <div class="title-desc">
+      Kau adalah <strong style="color:var(--text)">Arion</strong>, ksatria terakhir dari Ordo Jubah Bulan.
+      Nasib telah menyiapkan pedang legenda bagi mereka yang layak —
+      <em>Azure Moon Blade</em>, senjata yang dipercaya dapat membelah kegelapan abadi.
+    </div>
+    <button class="btn-game" onclick="startGame()">⚔ Mulai Petualangan</button>
+  </div>
+</div>
+
+<!-- QUEST BRIEF -->
+<div class="screen" id="screen-quest">
+  <div class="quest-screen">
+    <div class="level-badge" id="q-badge">LEVEL 1</div>
+    <div class="quest-title" id="q-title">—</div>
+    <div class="quest-divider"></div>
+    <div class="quest-story" id="q-story">—</div>
+    <div class="quest-objective">
+      <div class="quest-objective-label">Misi</div>
+      <div class="quest-objective-text" id="q-obj">—</div>
+    </div>
+    <button class="btn-game" onclick="startBattle()">Mulai Pertempuran ⚔</button>
+  </div>
+</div>
+
+<!-- BATTLE -->
+<div class="screen" id="screen-battle">
+  <div class="battle-screen">
+    <div class="battle-header">
+      <div class="battle-level-label" id="b-badge">LEVEL 1</div>
+      <div class="battle-turn-label" id="b-turn">Giliran: Pemain</div>
+    </div>
+    <div class="battle-arena">
+      <!-- Enemy -->
+      <div class="fighter" id="f-enemy">
+        <div class="fighter-sprite" id="e-sprite">🐺</div>
+        <div class="fighter-name" id="e-name">Enemy</div>
+        <div class="fighter-bars">
+          <div class="bar-row">
+            <div class="bar-label"><span>HP</span><span id="e-hp-txt">100/100</span></div>
+            <div class="bar-track"><div class="bar-fill hp-fill" id="e-hp-bar" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div class="status-row" id="e-status"></div>
+      </div>
+      <!-- VS -->
+      <div class="vs">VS</div>
+      <!-- Player -->
+      <div class="fighter" id="f-player">
+        <div class="fighter-sprite" id="p-sprite">🧙‍♂️</div>
+        <div class="fighter-name">Arion</div>
+        <div class="fighter-bars">
+          <div class="bar-row">
+            <div class="bar-label"><span>HP</span><span id="p-hp-txt">150/150</span></div>
+            <div class="bar-track"><div class="bar-fill hp-fill" id="p-hp-bar" style="width:100%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>MP</span><span id="p-mp-txt">80/80</span></div>
+            <div class="bar-track"><div class="bar-fill mp-fill" id="p-mp-bar" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div class="status-row" id="p-status"></div>
+      </div>
+    </div>
+    <div class="combat-log" id="combat-log">
+      <div class="log-entry log-sys">Pertempuran dimulai...</div>
+    </div>
+    <div class="action-grid" id="action-grid">
+      <button class="action-btn a-atk" id="btn-atk" onclick="act('atk')">
+        ⚔ Serang<small>ATK normal</small>
+      </button>
+      <button class="action-btn a-pow" id="btn-pow" onclick="act('pow')">
+        💥 Kuat<small>×1.8 · 20MP</small>
+      </button>
+      <button class="action-btn a-moon" id="btn-moon" onclick="act('moon')" style="display:none">
+        🌙 Moon Slash<small>×1.5+10 · 15MP</small>
+      </button>
+      <button class="action-btn a-def" id="btn-def" onclick="act('def')">
+        🛡 Bertahan<small>-50% DMG</small>
+      </button>
+      <button class="action-btn a-heal" id="btn-heal" onclick="act('heal')">
+        🧪 Ramuan<small id="pot-count">×3 kiri</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- LEVEL WIN -->
+<div class="screen" id="screen-win">
+  <div class="victory-screen">
+    <div style="font-size:3rem;margin-bottom:0.75rem" id="win-icon">⚔️</div>
+    <div class="victory-title" id="win-title">Musuh Dikalahkan!</div>
+    <div style="color:var(--silver);font-style:italic;font-size:0.98rem;margin-bottom:0.5rem" id="win-sub">Level selesai!</div>
+    <div class="reward-box" id="win-rewards"></div>
+    <button class="btn-game gold" id="btn-next" onclick="nextLevel()">Lanjut ke Level Berikutnya →</button>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div class="screen" id="screen-over">
+  <div class="gameover-screen">
+    <div style="font-size:3rem;margin-bottom:0.75rem">💀</div>
+    <div class="gameover-title">Ksatria Tumbang!</div>
+    <div style="color:var(--silver);font-style:italic;font-size:1rem;margin-bottom:1.5rem">
+      Arion telah jatuh dalam pertempuran... Tapi jiwa seorang ksatria tidak pernah benar-benar padam.
+    </div>
+    <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:10px;padding:0.85rem;margin-bottom:1.75rem;font-size:0.9rem;color:var(--silver)">
+      HP dipulihkan sebagian. Kamu bisa mencoba kembali dari level ini.
+    </div>
+    <div style="display:flex;gap:1rem;justify-content:center">
+      <button class="btn-game danger" onclick="retryLevel()">↺ Coba Lagi</button>
+      <button class="btn-game" onclick="goTitle()">↩ Menu Utama</button>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="screen" id="screen-final">
+  <div class="final-screen">
+    <div style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.4em;color:var(--gold);text-transform:uppercase;margin-bottom:0.5rem;animation:fadeIn 1s 0.3s both">Akhir Legenda</div>
+    <div class="final-title" style="animation:fadeIn 1s 0.6s both">Azure Moon Blade</div>
+    <div style="font-family:'Cinzel',serif;font-size:1.2rem;color:var(--silver);animation:fadeIn 1s 0.8s both">Telah Menjadi Milikmu!</div>
+    <div class="sword-wrap" style="animation:fadeIn 0.5s 0.9s both">
+      <div class="sword-glow"></div>
+      <div class="sword-emoji">🗡️</div>
+      <div class="bolt bolt-1"></div>
+      <div class="bolt bolt-2"></div>
+      <div class="bolt bolt-3"></div>
+      <div class="bolt bolt-4"></div>
+    </div>
+    <div class="sword-name">― Azure Moon Blade ―</div>
+    <div class="sword-desc">
+      Dipalsukan di bawah bulan purnama pertama sejak satu milenium, pedang ini menyimpan
+      kekuatan seluruh malam. Kilatan biru yang memancar dari bilahnya adalah jiwa bulan itu sendiri —
+      hanya sang <em>Moon Slayer</em> sejati yang mampu menggenggamnya tanpa terbakar.
+    </div>
+    <div class="sword-stats">
+      <div class="sword-stat">⚔️ ATK: <strong>+150</strong></div>
+      <div class="sword-stat">🌙 MP: <strong>+50</strong></div>
+      <div class="sword-stat">💫 CRIT Rate: <strong>35%</strong></div>
+      <div class="sword-stat">✨ Bonus: <strong>Moon Power</strong></div>
+    </div>
+    <div class="final-quote">"Dan malam pun membungkuk kepada sang Penghancur Bulan."</div>
+    <button class="btn-game" onclick="goTitle()" style="animation:fadeIn 1s 2.3s both">↩ Menu Utama</button>
+  </div>
+</div>
+
+</div><!-- #game -->
+<div id="flash" class="attack-flash"></div>
+
+<script>
+// ── LEVEL DATA ─────────────────────────────────────────────────────────────
+const LEVELS=[
+  {id:1,badge:"LEVEL 1",name:"Bayangan di Desa",
+   story:"Desa Thornmoor diserang makhluk bayangan yang keluar dari hutan larangan. Para penduduk berlari ketakutan. Sebagai ksatria Moon Slayer, Arion harus melindungi mereka dari ancaman malam yang mematikan.",
+   obj:"Kalahkan Serigala Bayangan yang menyerang desa!",
+   enemy:{name:"Serigala Bayangan",sprite:"🐺",hp:70,atk:16,def:5,sp:{name:"Lolongan Kegelapan",mult:1.7,desc:"melolong dan mencabik"}},
+   reward:{gold:50,item:"Ramuan Kecil",hpRestore:30,mpRestore:15,potions:1}},
+
+  {id:2,badge:"LEVEL 2",name:"Hutan Kegelapan",
+   story:"Di kedalaman Hutan Thornwood, makhluk purba bernama Roh Hutan telah diracuni energi kegelapan. Arion harus masuk ke jantung hutan terlarang dan mengakhiri penderitaan makhluk itu sebelum racun menyebar.",
+   obj:"Kalahkan Roh Hutan yang telah dikuasai kegelapan!",
+   enemy:{name:"Roh Hutan Kegelapan",sprite:"👁️",hp:100,atk:23,def:8,sp:{name:"Akar Beracun",mult:1.9,desc:"memanggil akar beracun dari tanah"}},
+   reward:{gold:100,item:"Ramuan Hutan",hpRestore:35,mpRestore:20,potions:1}},
+
+  {id:3,badge:"LEVEL 3",name:"Jalur Pegunungan Merah",
+   story:"Pemimpin perampok pegunungan, Warlord Kragen, memblokir satu-satunya jalur menuju Kuil Bulan. Arion harus menghadapinya. Setelah menang, teknik legenda Moon Slash terungkap dalam memorinya.",
+   obj:"Kalahkan Warlord Kragen di puncak pegunungan!",
+   enemy:{name:"Warlord Kragen",sprite:"🪖",hp:135,atk:31,def:13,sp:{name:"Tebasan Badai",mult:2.1,desc:"melancarkan tebasan angin badai"}},
+   reward:{gold:200,item:"Teknik Moon Slash",hpRestore:40,mpRestore:30,potions:1,unlockMoon:true}},
+
+  {id:4,badge:"LEVEL 4",name:"Kuil Bulan Terkutuk",
+   story:"Pendeta Bayangan menguasai Kuil Bulan suci dan membuka portal kegelapan. Arion harus masuk ke kuil yang terkutuk dan menghadapi sang Pendeta yang kini memiliki kekuatan supra-alami.",
+   obj:"Kalahkan Pendeta Bayangan dan tutup portal kegelapan!",
+   enemy:{name:"Pendeta Bayangan",sprite:"🧟",hp:165,atk:38,def:17,sp:{name:"Kutukan Absal",mult:2.3,desc:"melemparkan kutukan dari dimensi gelap"}},
+   reward:{gold:350,item:"Jimat Bulan Suci",hpRestore:50,mpRestore:40,potions:2}},
+
+  {id:5,badge:"LEVEL 5 — FINAL",name:"Ujian Terakhir: Naga Abadi",
+   story:"Di puncak Kuil Bulan, Arion berhadapan dengan Ancient Shadow Dragon — penjaga terakhir yang menghalangi takdirnya. Naga ini sudah ada sejak sebelum manusia pertama lahir. Ini adalah pertempuran puncak!",
+   obj:"Kalahkan Ancient Shadow Dragon dan klaim Azure Moon Blade!",
+   enemy:{name:"Ancient Shadow Dragon",sprite:"🐉",hp:225,atk:50,def:22,sp:{name:"Nafas Bayangan Purba",mult:2.6,desc:"melepaskan nafas bayangan yang menghancurkan"}},
+   reward:{isFinal:true}},
+];
+
+// ── GAME STATE ──────────────────────────────────────────────────────────────
+const BASE_PLAYER={hp:150,maxHp:150,mp:80,maxMp:80,atk:28,def:10,potions:3,defending:false,hasMoon:false};
+let gs={lvl:0,player:{...BASE_PLAYER},enemy:null,locked:false,turn:0};
+
+// ── STARS ───────────────────────────────────────────────────────────────────
+(function initStars(){
+  const cv=document.getElementById('stars-canvas'),ctx=cv.getContext('2d');
+  function rsz(){cv.width=window.innerWidth;cv.height=window.innerHeight}
+  rsz();window.addEventListener('resize',rsz);
+  const stars=Array.from({length:220},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.4+0.3,a:Math.random(),s:Math.random()*0.018+0.005}));
+  function draw(){
+    const g=ctx.createLinearGradient(0,0,0,cv.height);
+    g.addColorStop(0,'#030712');g.addColorStop(0.6,'#06091a');g.addColorStop(1,'#080c1a');
+    ctx.fillStyle=g;ctx.fillRect(0,0,cv.width,cv.height);
+    stars.forEach(s=>{
+      s.a+=s.s*(Math.random()>0.5?1:-1);
+      s.a=Math.max(0.1,Math.min(1,s.a));
+      ctx.save();ctx.globalAlpha=s.a;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle='#e2e8f0';ctx.fill();ctx.restore();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+// ── GAME FLOW ────────────────────────────────────────────────────────────────
+function startGame(){
+  gs.lvl=0;
+  gs.player={...BASE_PLAYER,defending:false,hasMoon:false};
+  showQuest();
+}
+
+function showQuest(){
+  const lv=LEVELS[gs.lvl];
+  document.getElementById('q-badge').textContent=lv.badge;
+  document.getElementById('q-title').textContent=lv.name;
+  document.getElementById('q-story').textContent=lv.story;
+  document.getElementById('q-obj').innerHTML=`<span style="font-size:1.4rem">${lv.enemy.sprite}</span> ${lv.obj}`;
+  show('quest');
+}
+
+function startBattle(){
+  const lv=LEVELS[gs.lvl];
+  gs.enemy={...lv.enemy,maxHp:lv.enemy.hp,spTurns:0};
+  gs.player.defending=false;
+  gs.locked=false;
+  gs.turn=0;
+
+  document.getElementById('b-badge').textContent=`${lv.badge} — ${lv.name}`;
+  document.getElementById('e-sprite').textContent=lv.enemy.sprite;
+  document.getElementById('e-name').textContent=lv.enemy.name;
+
+  const moonBtn=document.getElementById('btn-moon');
+  moonBtn.style.display=gs.player.hasMoon?'block':'none';
+  document.getElementById('action-grid').className=`action-grid${gs.player.hasMoon?' has-moon':''}`;
+
+  updatePUI();updateEUI();
+  document.getElementById('combat-log').innerHTML='<div class="log-entry log-sys">⚔ Pertempuran dimulai! Menghadapi '+lv.enemy.name+'!</div>';
+  setBtns(true);
+  show('battle');
+}
+
+// ── COMBAT ───────────────────────────────────────────────────────────────────
+function act(type){
+  if(gs.locked)return;
+  const p=gs.player,e=gs.enemy;
+  setBtns(false);gs.locked=true;
+  gs.turn++;
+
+  let dmg=0,logHTML='';
+
+  if(type==='def'){
+    p.defending=true;
+    log('<span class="log-p">🛡 Arion bersiap bertahan. DMG berikutnya berkurang 50%!</span>');
+    updatePStatus();
+    setTimeout(enemyTurn,800);return;
+  }
+  if(type==='heal'){
+    if(p.potions<=0){log('<span style="color:var(--red)">Tidak ada ramuan tersisa!</span>');unlock();return;}
+    p.potions--;
+    const heal=Math.min(40,p.maxHp-p.hp);
+    p.hp=Math.min(p.maxHp,p.hp+40);
+    p.mp=Math.min(p.maxMp,p.mp+10);
+    log(`<span class="log-p">🧪 Arion minum ramuan! +${heal}HP, +10MP</span>`);
+    popup('f-player',`+${heal}`,'#86efac');
+    updatePUI();
+    setTimeout(enemyTurn,800);return;
+  }
+
+  let mpCost=0;
+  if(type==='atk'){
+    const base=p.atk+Math.floor(Math.random()*12);
+    const crit=Math.random()<0.15;
+    dmg=Math.max(1,Math.floor((crit?base*1.5:base)-e.def));
+    logHTML=crit
+      ?`<span class="log-crit">🔥 CRITICAL! Arion menghantam ${e.name} dengan telak! [${dmg} DMG]</span>`
+      :`<span class="log-p">⚔ Arion menyerang ${e.name}! [${dmg} DMG]</span>`;
+  }else if(type==='pow'){
+    if(p.mp<20){log('<span style="color:var(--red)">MP tidak cukup! (butuh 20MP)</span>');unlock();return;}
+    mpCost=20;
+    const base=Math.floor(p.atk*1.8)+Math.floor(Math.random()*8);
+    dmg=Math.max(1,base-e.def);
+    logHTML=`<span class="log-p">💥 Arion melancarkan Serangan Kuat! [${dmg} DMG]</span>`;
+  }else if(type==='moon'){
+    if(p.mp<15){log('<span style="color:var(--red)">MP tidak cukup! (butuh 15MP)</span>');unlock();return;}
+    mpCost=15;
+    const base=Math.floor(p.atk*1.5)+10+Math.floor(Math.random()*10);
+    const crit=Math.random()<0.25;
+    dmg=Math.max(1,Math.floor((crit?base*1.4:base)-e.def));
+    logHTML=crit
+      ?`<span class="log-crit">🌙✨ MOON CRITICAL! Cahaya bulan penuh menghantam! [${dmg} DMG]</span>`
+      :`<span class="log-p">🌙 Arion menggunakan Moon Slash! [${dmg} DMG]</span>`;
+  }
+
+  if(mpCost>0)p.mp-=mpCost;
+  e.hp=Math.max(0,e.hp-dmg);
+  log(logHTML);
+  animHit('e-sprite');popup('f-enemy',`-${dmg}`,'#fca5a5');
+  flash('flash-p');
+  updatePUI();updateEUI();
+
+  setTimeout(()=>{
+    if(e.hp<=0){doWin();return;}
+    setTimeout(enemyTurn,350);
+  },650);
+}
+
+function enemyTurn(){
+  const p=gs.player,e=gs.enemy;
+  e.spTurns++;
+  const useSpecial=e.spTurns>=3&&Math.random()<0.35;
+  let base,dmg,logHTML;
+
+  if(useSpecial){
+    base=Math.floor(e.atk*e.sp.mult)+Math.floor(Math.random()*8);
+    dmg=Math.max(1,base-p.def);
+    if(p.defending)dmg=Math.floor(dmg*0.5);
+    logHTML=`<span class="log-e">💢 ${e.name} ${e.sp.desc}! ${p.defending?'[DIBLOKIR — ':'['}${dmg} DMG${p.defending?']':']'}</span>`;
+    e.spTurns=0;
+  }else{
+    base=e.atk+Math.floor(Math.random()*10);
+    dmg=Math.max(1,base-p.def);
+    if(p.defending)dmg=Math.floor(dmg*0.5);
+    logHTML=`<span class="log-e">🗡 ${e.name} menyerang Arion! ${p.defending?'[DIBLOKIR — ':'['}${dmg} DMG${p.defending?']':']'}</span>`;
+  }
+
+  p.hp=Math.max(0,p.hp-dmg);
+  p.defending=false;
+  log(logHTML);
+  animHit('p-sprite');popup('f-player',`-${dmg}`,'#fca5a5');
+  flash('flash-e');
+  updatePUI();updatePStatus();
+
+  setTimeout(()=>{
+    if(p.hp<=0){doLose();return;}
+    unlock();
+  },650);
+}
+
+function doWin(){
+  const lv=LEVELS[gs.lvl];
+  const r=lv.reward;
+  if(r.isFinal){setTimeout(()=>show('final'),600);return;}
+  gs.player.hp=Math.min(gs.player.maxHp,gs.player.hp+r.hpRestore);
+  gs.player.mp=Math.min(gs.player.maxMp,gs.player.mp+r.mpRestore);
+  gs.player.potions=Math.min(5,gs.player.potions+(r.potions||0));
+  if(r.unlockMoon)gs.player.hasMoon=true;
+
+  let html=`
+    <div class="reward-item">💰 Emas: +${r.gold}</div>
+    <div class="reward-item">❤️ HP Dipulihkan: +${r.hpRestore}</div>
+    <div class="reward-item">💧 MP Dipulihkan: +${r.mpRestore}</div>
+    <div class="reward-item">🧪 Ramuan: +${r.potions} (Total: ${gs.player.potions})</div>
+    <div class="reward-item">✨ Item: ${r.item}</div>`;
+  if(r.unlockMoon)html+=`<div class="reward-item" style="color:#93c5fd">🌙 Teknik Baru Terbuka: <strong>Moon Slash!</strong></div>`;
+
+  document.getElementById('win-icon').textContent=lv.enemy.sprite;
+  document.getElementById('win-title').textContent=`${lv.enemy.name} Dikalahkan!`;
+  document.getElementById('win-sub').textContent=`Level ${lv.id} selesai! Perjalananmu berlanjut...`;
+  document.getElementById('win-rewards').innerHTML=html;
+
+  const isLast=gs.lvl>=LEVELS.length-1;
+  document.getElementById('btn-next').textContent=isLast?'Klaim Hadiah Terakhir ★':'Lanjut ke Level Berikutnya →';
+  show('win');
+}
+
+function doLose(){
+  gs.player.hp=Math.floor(gs.player.maxHp*0.5);
+  gs.player.mp=Math.floor(gs.player.maxMp*0.5);
+  show('over');
+}
+
+function nextLevel(){gs.lvl++;gs.lvl>=LEVELS.length?show('final'):showQuest();}
+function retryLevel(){showQuest();}
+function goTitle(){show('title');}
+
+// ── UI HELPERS ───────────────────────────────────────────────────────────────
+function updatePUI(){
+  const p=gs.player;
+  const hpPct=(p.hp/p.maxHp)*100,mpPct=(p.mp/p.maxMp)*100;
+  document.getElementById('p-hp-txt').textContent=`${p.hp}/${p.maxHp}`;
+  document.getElementById('p-mp-txt').textContent=`${p.mp}/${p.maxMp}`;
+  const hb=document.getElementById('p-hp-bar');
+  hb.style.width=hpPct+'%';hb.className='bar-fill hp-fill'+(hpPct<25?' low':'');
+  document.getElementById('p-mp-bar').style.width=mpPct+'%';
+  document.getElementById('pot-count').textContent=`×${p.potions} kiri`;
+}
+function updateEUI(){
+  const e=gs.enemy;
+  const hpPct=(e.hp/e.maxHp)*100;
+  document.getElementById('e-hp-txt').textContent=`${e.hp}/${e.maxHp}`;
+  const hb=document.getElementById('e-hp-bar');
+  hb.style.width=hpPct+'%';hb.className='bar-fill hp-fill'+(hpPct<25?' low':'');
+}
+function updatePStatus(){
+  document.getElementById('p-status').innerHTML=gs.player.defending?'<span class="status-tag tag-defend">🛡 Bertahan</span>':'';
+}
+function log(html){
+  const c=document.getElementById('combat-log');
+  const d=document.createElement('div');d.className='log-entry';d.innerHTML=html;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+  while(c.children.length>25)c.removeChild(c.firstChild);
+}
+function setBtns(on){
+  ['btn-atk','btn-pow','btn-moon','btn-def','btn-heal'].forEach(id=>{
+    const b=document.getElementById(id);if(b)b.disabled=!on;
+  });
+}
+function unlock(){gs.locked=false;setBtns(true);}
+function animHit(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),350);
+}
+function popup(containerId,text,color){
+  const c=document.getElementById(containerId);if(!c)return;
+  const d=document.createElement('div');
+  d.className='dmg-popup';d.style.color=color;
+  d.style.left=(Math.random()*30+20)+'%';d.textContent=text;
+  c.style.position='relative';c.appendChild(d);
+  setTimeout(()=>d.remove(),1000);
+}
+function flash(cls){
+  const f=document.getElementById('flash');
+  f.className='attack-flash '+cls;
+  setTimeout(()=>{f.className='attack-flash';},300);
+}
+</script>
+</body>
+</html>
